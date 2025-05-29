@@ -1,0 +1,38 @@
+name: GitHub Projects Automation
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  move-issue-to-done:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+
+    steps:
+      # Checkout the code
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      # Move Issue to Done column in GitHub Project (via curl)
+      - name: Move Issue to Done Column
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_URL: ${{ github.event.pull_request.issue_url }}
+        run: |
+          echo "Fetching associated issues (if any)..."
+          
+          # Replace the following variables with actual project details
+          PROJECT_COLUMN_ID="PROJECT_COLUMN_ID"
+
+          # Example of moving a card to a project column
+          # You must first find the card ID associated with the PR
+          CARD_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "${{ github.event.pull_request.url }}/project-cards" | jq -r '.[0].id')
+
+          echo "Moving card ID: $CARD_ID to column ID: $PROJECT_COLUMN_ID"
+
+          curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
+               -H "Accept: application/vnd.github.inertia-preview+json" \
+               https://api.github.com/projects/columns/$PROJECT_COLUMN_ID/cards \
+               -d "{\"card_id\": $CARD_ID}"
